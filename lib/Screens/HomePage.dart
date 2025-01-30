@@ -1,6 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:health_app1/Controller/Get_image.dart';
+import 'package:health_app1/Screens/Bottom_navi.dart';
 import 'package:health_app1/Widgets/Doctor_Intro.dart';
 import 'package:health_app1/Widgets/Medical_Field.dart';
 import 'package:iconsax/iconsax.dart';
@@ -15,15 +19,16 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int index = 1;
   @override
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: SingleChildScrollView(
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -32,7 +37,7 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     RichText(
                         text: TextSpan(
-                            text: 'Hello',
+                            text: 'hello'.tr,
                             style: Theme.of(context)
                                 .textTheme
                                 .displaySmall
@@ -41,7 +46,7 @@ class _HomePageState extends State<HomePage> {
                                         const Color.fromRGBO(134, 150, 187, 1)),
                             children: [
                           TextSpan(
-                              text: '\nHi James',
+                              text: 'hi'.tr,
                               style: Theme.of(context)
                                   .textTheme
                                   .displaySmall
@@ -50,9 +55,51 @@ class _HomePageState extends State<HomePage> {
                                       color: Colors.black,
                                       fontWeight: FontWeight.w700))
                         ])),
-                    Image.asset(
-                      'assets/Frame.png',
-                      height: 56.h,
+                    // Image.asset(
+                    //   'assets/Frame.png',
+                    //   height: 56.h,
+                    // )
+                    FutureBuilder(
+                      future: FireStoreDataBase().getData(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData == false) {
+                          return SizedBox(
+                            height: 60.h,
+                            width: 60.w,
+                            child: GestureDetector(
+                              onTap: () {
+                                Get.to(() => bottomnavigationbarPage(
+                                      index: 3,
+                                    ));
+                              },
+                              child: CircleAvatar(
+                                  backgroundColor: Colors.grey.shade300,
+                                  child: Icon(
+                                    Iconsax.gallery,
+                                    color: Colors.blue,
+                                  )),
+                            ),
+                          );
+                        }
+                        if (snapshot.hasData) {
+                          return SizedBox(
+                            height: 60.h,
+                            width: 60.w,
+                            child: GestureDetector(
+                              onTap: () {
+                                Get.to(() => bottomnavigationbarPage(
+                                      index: 3,
+                                    ));
+                              },
+                              child: CircleAvatar(
+                                backgroundImage:
+                                    NetworkImage(snapshot.data.toString()),
+                              ),
+                            ),
+                          );
+                        }
+                        return CircularProgressIndicator();
+                      },
                     )
                   ],
                 ),
@@ -71,8 +118,8 @@ class _HomePageState extends State<HomePage> {
                       DoctorTile(
                         colors: Colors.white,
                         image: 'imran',
-                        title: 'Dr.Imran Syahir',
-                        subtitle: 'General Doctor',
+                        title: 'imran'.tr,
+                        subtitle: 'Gn'.tr,
                         trailing: Icon(
                           Icons.arrow_forward_ios_rounded,
                           color: Colors.white,
@@ -83,31 +130,42 @@ class _HomePageState extends State<HomePage> {
                         color: const Color.fromRGBO(255, 255, 255, 0.15),
                       ),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Icon(
-                            Iconsax.calendar_2,
-                            color: Colors.white,
+                          Row(
+                            children: [
+                              Icon(
+                                Iconsax.calendar_2,
+                                color: Colors.white,
+                              ),
+                              SizedBox(
+                                width: 8.w,
+                              ),
+                              Text(
+                                'imrandate'.tr,
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium,
+                              ),
+                            ],
                           ),
-                          SizedBox(
-                            width: 8.w,
-                          ),
-                          Text(
-                            'Sunday, 12 June',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          SizedBox(
-                            width: 30.w,
-                          ),
-                          Icon(
-                            Icons.watch_later_outlined,
-                            color: Colors.white,
-                          ),
-                          SizedBox(
-                            width: 8.w,
-                          ),
-                          Text(
-                            '11:00 - 12:00 AM',
-                            style: Theme.of(context).textTheme.headlineMedium,
+                          // SizedBox(
+                          //   width: 30.w,
+                          // ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.watch_later_outlined,
+                                color: Colors.white,
+                              ),
+                              SizedBox(
+                                width: 8.w,
+                              ),
+                              Text(
+                                '11:00 - 12:00 AM',
+                                style:
+                                    Theme.of(context).textTheme.headlineMedium,
+                              ),
+                            ],
                           )
                         ],
                       )
@@ -118,6 +176,10 @@ class _HomePageState extends State<HomePage> {
                   height: 20,
                 ),
                 TextField(
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontSize: 20),
                   decoration: InputDecoration(
                       fillColor: Color.fromARGB(255, 252, 247, 247),
                       filled: true,
@@ -128,39 +190,45 @@ class _HomePageState extends State<HomePage> {
                       ),
                       prefixIcon: Icon(Iconsax.search_normal_14),
                       prefixIconColor: const Color.fromRGBO(134, 150, 187, 1),
-                      hintText: 'Search doctor or health issue',
+                      hintText: 'SearchField'.tr,
                       hintStyle: Theme.of(context).textTheme.bodyMedium,
                       contentPadding: EdgeInsets.all(14)),
                 ),
                 SizedBox(
                   height: 24.h,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    MedicalField(
-                      image: 'sun',
-                      title: 'Covid 19',
+                SizedBox(
+                  width: double.infinity,
+                  height: 109.h,
+                  child: ListView(scrollDirection: Axis.horizontal, children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        MedicalField(
+                          image: 'sun',
+                          title: 'covid'.tr,
+                        ),
+                        MedicalField(
+                          image: 'profile-add',
+                          title: 'doctor'.tr,
+                        ),
+                        MedicalField(
+                          image: 'link',
+                          title: 'medicine'.tr,
+                        ),
+                        MedicalField(
+                          image: 'hospital',
+                          title: 'Hospital'.tr,
+                        )
+                      ],
                     ),
-                    MedicalField(
-                      image: 'profile-add',
-                      title: 'Doctor',
-                    ),
-                    MedicalField(
-                      image: 'link',
-                      title: 'Medicine',
-                    ),
-                    MedicalField(
-                      image: 'hospital',
-                      title: 'Hospital',
-                    )
-                  ],
+                  ]),
                 ),
                 SizedBox(
                   height: 30,
                 ),
                 Text(
-                  'Near Doctor',
+                  'neardoc'.tr,
                   style: Theme.of(context).textTheme.displayLarge,
                 ),
                 SizedBox(
@@ -177,8 +245,8 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       DoctorTile(
                         image: 'joseph',
-                        title: 'Dr. Joseph Brostito',
-                        subtitle: 'Dental Specialist',
+                        title: 'drJoseph'.tr,
+                        subtitle: 'DS'.tr,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -198,37 +266,46 @@ class _HomePageState extends State<HomePage> {
                         color: const Color.fromRGBO(245, 245, 245, 1),
                       ),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Icon(
-                            Icons.watch_later_outlined,
-                            color: Colors.yellow,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.watch_later_outlined,
+                                color: Colors.yellow,
+                              ),
+                              SizedBox(
+                                width: 8.w,
+                              ),
+                              Text(
+                                'reviews'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(color: Colors.yellow),
+                              ),
+                            ],
                           ),
-                          SizedBox(
-                            width: 8.w,
-                          ),
-                          Text(
-                            '4,8 (120 Reviews)',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(color: Colors.yellow),
-                          ),
-                          SizedBox(
-                            width: 30.w,
-                          ),
-                          Icon(
-                            Icons.watch_later_outlined,
-                            color: Colors.blue,
-                          ),
-                          SizedBox(
-                            width: 8.w,
-                          ),
-                          Text(
-                            'Open at 17.00',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(color: Colors.blue),
+                          // SizedBox(
+                          //   width: 30.w,
+                          // ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.watch_later_outlined,
+                                color: Colors.blue,
+                              ),
+                              SizedBox(
+                                width: 8.w,
+                              ),
+                              Text(
+                                'open'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(color: Colors.blue),
+                              ),
+                            ],
                           )
                         ],
                       )

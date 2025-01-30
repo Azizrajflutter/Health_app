@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:health_app1/Widgets/Doctor_Intro.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -88,7 +89,7 @@ class DoctorDetails extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primaryContainer),
             child: Center(
               child: Text(
-                'Details',
+                'Details'.tr,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.secondaryContainer),
               ),

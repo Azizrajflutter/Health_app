@@ -49,5 +49,10 @@ ThemeData LightTheme = ThemeData(
           fontFamily: GoogleFonts.poppins().fontFamily,
           color: const Color.fromRGBO(134, 150, 187, 1)),
       bodyLarge: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w500),
+      labelLarge: TextStyle(
+        fontSize: 20.sp,
+        fontWeight: FontWeight.w600,
+        fontFamily: GoogleFonts.montserrat().fontFamily,
+      ),
       bodySmall: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w400)),
 );

@@ -1,14 +1,17 @@
 import 'dart:async';
 
-import 'package:email_auth/email_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:get/get_core/get_core.dart';
 import 'package:get/get_navigation/get_navigation.dart';
+import 'package:health_app1/Screens/Bottom_navi.dart';
 import 'package:health_app1/Screens/Register_Page.dart';
 import 'package:health_app1/Screens/Sign_in.dart';
+import 'package:health_app1/Services/auth_services.dart';
 import 'package:health_app1/Widgets/MyButton.dart';
 import 'package:health_app1/Widgets/MyContainer.dart';
 import 'package:health_app1/Widgets/MyTextfield.dart';
@@ -24,43 +27,112 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   TextEditingController usernamecontroller = TextEditingController();
   TextEditingController emailorPhoneNumberController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
-  var emailAuth = EmailAuth(sessionName: "Sample session");
+  bool isvisible = false;
+  bool obscure = true;
+  bool isProgress = false;
+
+  final _formkey = GlobalKey<FormState>();
   final _auth = FirebaseAuth.instance;
-  void sendOtp() async {}
+  final FirestoreRef = FirebaseFirestore.instance.collection('New Users');
+
+  @override
+  void dispose() {
+    usernamecontroller.dispose();
+    emailorPhoneNumberController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _signup() async {
-    // var input = emailorPhoneNumberController.text.trim();
+    var PhoneNumber = emailorPhoneNumberController.text.trim();
+    var input = emailorPhoneNumberController.text.trim();
+    bool isEmail = input.contains('@') && input.contains('.');
+    bool isPhoneNumber = RegExp(r'^\+92\d{10}$').hasMatch(input);
+    // showDialog(
+    //     context: context,
+    //     barrierDismissible: false,
+    //     builder: (context) => Center(
+    //         child: SizedBox(height: 40, child: CircularProgressIndicator())));
 
-    // bool isEmail = input.contains('@') && input.contains('.');
-
+    setState(() {
+      isProgress = true;
+    });
     try {
-      await emailAuth.sendOtp(
-          otpLength: 5, recipientMail: emailorPhoneNumberController.value.text);
+      if (isEmail) {
+        UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
+                email: emailorPhoneNumberController.text,
+                password: passwordController.text);
+        User? user = userCredential.user;
 
-      final UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-              email: emailorPhoneNumberController.text,
-              password: passwordController.text);
+        if (user != null) {
+          await FirestoreRef.doc(user.uid).set(
+              {'Name': usernamecontroller.text.toString(), 'Uid': user.uid});
+        }
+        setState(() {
+          isProgress = false;
+        });
+        // Navigator.of(context).pop();
 
-      Navigator.pushReplacement(
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => RegisterPage(
-              email: emailorPhoneNumberController.value.text,
-            ),
-          ));
+          MaterialPageRoute(builder: (context) => bottomnavigationbarPage()),
+        );
+      } else if (isPhoneNumber) {
+        await _auth.verifyPhoneNumber(
+            phoneNumber: PhoneNumber,
+            verificationCompleted: (PhoneAuthCredential credential) async {},
+            verificationFailed: (FirebaseAuthException e) {
+              print(e.toString());
 
-      print('Signed up user: ${userCredential.user}');
+              // Navigator.of(context).pop();
+              setState(() {
+                isProgress = false;
+              });
+              Get.snackbar('Failed'.tr, e.toString());
+            },
+            codeSent: (String Verificationid, int? resendToken) {
+              // Navigator.of(context).pop();
+              setState(() {
+                isProgress = false;
+              });
+              Get.snackbar('Success', 'Otp Code Sent to Your Number');
+
+              Get.off(() => RegisterPage(
+                    email: PhoneNumber,
+                    Verificationid: Verificationid,
+                  ));
+            },
+            codeAutoRetrievalTimeout: (String VerificationId) {});
+
+        // Navigator.of(context).pop();
+        setState(() {
+          isProgress = false;
+        });
+        // Get.to(() => RegisterPage(
+        //       email: emailorPhoneNumberController.value.text,
+        //       Verificationid:'',
+        //     ));
+      } else {
+        // Navigator.of(context).pop();
+        setState(() {
+          isProgress = false;
+        });
+      }
+
+      print('Signed up user: ${_auth.currentUser}');
     } catch (e) {
+      // Navigator.of(context).pop();
+      setState(() {
+        isProgress = false;
+      });
       print('Failed to sign up: $e');
-      Get.snackbar('Failed', e.toString());
+      Get.snackbar('Failed'.tr, e.toString());
     }
   }
 
   // bool _isTextNotEmpty = false;
-  bool isvisible = false;
-  bool obscure = true;
 
-  final _formkey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -73,154 +145,168 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           child: Form(
             key: _formkey,
             child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  SizedBox(
-                    height: 37.h,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Create Account",
-                        style: Theme.of(context).textTheme.displaySmall,
+                      SizedBox(
+                        height: 37.h,
                       ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 28.h,
-                  ),
-                  Text(
-                    "Username",
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  MyTextField(
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Please enter your username';
-                      }
-                      return null;
-                    },
-                    usernamecontroller: usernamecontroller,
-                    // isTextNotEmpty: _isTextNotEmpty,
-                    title: 'Enter your username',
-                    icon: Icons.person_rounded,
-                  ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  Text(
-                    "Email or Phone number",
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  MyTextField(
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Please enter your email';
-                      } else if (!value.contains('@') || !value.contains('.')) {
-                        return 'Please enter a valid email address';
-                      }
-                      return null;
-                    },
-                    usernamecontroller: emailorPhoneNumberController,
-                    title: 'Email or phone number',
-                    icon: Icons.mail,
-                  ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  Text(
-                    "Password",
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  MyTextField(
-                    validator: (value) {
-                      if (value!.length < 8) {
-                        return 'Password must be at least 8 characters long';
-                      }
-
-                      return null;
-                    },
-                    obscure: obscure,
-                    eyeicon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            isvisible = !isvisible;
-                            obscure = !obscure;
-                          });
-                        },
-                        icon: Icon(
-                          Icons.visibility,
-                          color: isvisible ? Colors.black : Colors.grey,
-                        )),
-                    usernamecontroller: passwordController,
-                    // isTextNotEmpty: _isTextNotEmpty,
-                    title: 'Password',
-                    icon: Icons.lock,
-                  ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  MyButton(
-                    text: 'Create Account',
-                    onTap: () {
-                      if (_formkey.currentState!.validate()) {
-                        _signup();
-                      }
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Already Have an account? ',
-                        style: Theme.of(context).textTheme.labelSmall,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Title1".tr,
+                            style: Theme.of(context).textTheme.displaySmall,
+                          ),
+                        ],
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          Get.to(() => SignInPage());
-                        },
-                        child: Text(
-                          'Sign Up',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(color: Colors.blue),
-                        ),
-                      )
-                    ],
-                  ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                      SizedBox(
+                        height: 28.h,
+                      ),
                       Text(
-                        'or use social account',
+                        "userfieldtitle".tr,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
+                      MyTextField(
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'usernamevalidation'.tr;
+                          }
+                          return null;
+                        },
+                        usernamecontroller: usernamecontroller,
+                        // isTextNotEmpty: _isTextNotEmpty,
+                        title: 'userfield'.tr,
+                        icon: Icons.person_rounded,
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      Text(
+                        "emailorPhone".tr,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      MyTextField(
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'emailPhonefield'.tr;
+                          } else if (RegExp(r'^\+92\d{10}$')
+                              .hasMatch(emailorPhoneNumberController.text)) {
+                            return null;
+                          } else if (!value.contains('@') ||
+                              !value.contains('.')) {
+                            return 'validemailvalidation'.tr;
+                          }
+                          return null;
+                        },
+                        usernamecontroller: emailorPhoneNumberController,
+                        title: 'emailorPhone'.tr,
+                        icon: Icons.mail,
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      Text(
+                        "passwordfield".tr,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      MyTextField(
+                        validator: (value) {
+                          if (value!.isEmpty) {
+                            return 'passwordvalidation'.tr;
+                          } else if (value.length < 8) {
+                            return 'passwordvalidationlong'.tr;
+                          }
+
+                          return null;
+                        },
+                        obscure: obscure,
+                        eyeicon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                isvisible = !isvisible;
+                                obscure = !obscure;
+                              });
+                            },
+                            icon: Icon(
+                              Icons.visibility,
+                              color: isvisible ? Colors.black : Colors.grey,
+                            )),
+                        usernamecontroller: passwordController,
+                        // isTextNotEmpty: _isTextNotEmpty,
+                        title: 'passwordfield'.tr,
+                        icon: Icons.lock,
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      MyButton(
+                        text: 'CreateButton'.tr,
+                        onTap: () {
+                          if (_formkey.currentState!.validate()) {
+                            FocusScope.of(context).unfocus();
+                            _signup();
+                          }
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'text2'.tr,
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Get.to(() => SignInPage());
+                            },
+                            child: Text(
+                              'CreatepageButton'.tr,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(color: Colors.blue),
+                            ),
+                          )
+                        ],
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'text3'.tr,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      MyContainer(
+                        ontap: () => AuthServices().SignInWithGoogle(),
+                        title: 'google'.tr,
+                        image: 'google',
+                      ),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      MyContainer(title: 'twitter'.tr, image: 'twiter'),
+                      SizedBox(
+                        height: 24.h,
+                      ),
+                      MyContainer(
+                        title: 'facebook'.tr,
+                        image: 'fb',
+                      ),
                     ],
                   ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  MyContainer(
-                    title: 'Continue with Google',
-                    image: 'google',
-                  ),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  MyContainer(title: 'Continue with Twitter', image: 'twiter'),
-                  SizedBox(
-                    height: 24.h,
-                  ),
-                  MyContainer(
-                    title: 'Continue with Facebook',
-                    image: 'fb',
-                  ),
+                  if (isProgress) CircularProgressIndicator()
                 ],
               ),
             ),
